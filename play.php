@@ -29,7 +29,7 @@ else
 		die('{"status":"error", "message":"'. $m . '" }');
 	}
 	if ($row = $retval->fetch_assoc()) {
-		$gameData = $json_decode($row["data"], true);
+		$gameData = json_decode($row["data"], true);
 	}
 	$redis->set($key, $gameData);
 }
@@ -71,7 +71,7 @@ $win_total = 0;
 $lose_total = 0;
 if (array_key_exists("win_total", $userGameData) || array_key_exists("win_count", $userGameData))
 {
-       	$win_count = intval($userGameData["win_count"]);
+	$win_count = intval($userGameData["win_count"]);
 	$lose_count = intval($userGameData["lose_count"]);
 	$win_total = intval($userGameData["win_total"]);
 	$lose_total = intval($userGameData["lose_total"]);

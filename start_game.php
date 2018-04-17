@@ -14,7 +14,6 @@ $gid = $_REQUEST["gid"];
 //DB CALL: retrieve all key and value pairs associated with $gid from game_data
 //
 $gameData = []; // CACHED GAME DATA, includes wp
-$returnGameData = []; //GAME DATA RETURNED TO PIGGIE, excludes wp
 
 $key = "game.data.$gid";
 if ($redis->exists($key)) 
@@ -35,15 +34,19 @@ else
 	if ($row = $retval->fetch_assoc())
 	{
 		$gameData = json_decode($row["data"], true);
-		foreach ($gameData as $item) 
-		{
-			if ($item[0] != 'wp') // CHECK FOR WP KEY
-			{
-				$returnGameData[] = $item;;
-			}
-		}
+		$redis->set($key, $gameData);
 	}
-	$redis->set($key, $gameData);
+}
+//Remove WP from data returned to client.
+
+$returnGameData = []; //GAME DATA RETURNED TO PIGGIE, excludes wp
+
+foreach ($gameData as $item) 
+{
+	if ($item[0] != 'wp') // CHECK FOR WP KEY
+	{
+		$returnGameData[] = $item;;
+	}
 }	
 
 //-----------------------------------
@@ -59,8 +62,7 @@ $key = "user.game.data.$id.$gid";
 if ($redis->exists($key))
 {
 	$userGameData = $redis->get($key);
-	$sessionCount = intval($userGameData["sessions"]);
-	//REDIS USERGAME DATA IS SET AT END OF FILE 
+	//REDIS USER GAME DATA IS SET AT END OF FILE 
 }
 else
 {	
@@ -69,7 +71,7 @@ else
 	if(! $retval )
 	{		
 		$m = "Could not retrieve user game data: " . $conn->error;
-        	error_log($m);
+        error_log($m);
 		die('{"status":"error", "message":"' . $m . '"}');
 	}
 	if ($row=$retval->fetch_assoc())
@@ -78,7 +80,7 @@ else
 	}
 }
 $userGameData["sessions"]+=1;
-if ($userGameData["sessions"] == 1) 	// The first time user has played the game
+if ($userGameData["sessions"] == 1) // The first time user has played the game
 {
 	$userGameData["last_play"] = strval(date('d-m-Y'));
 	$userGameData["win_count"] = 0;
