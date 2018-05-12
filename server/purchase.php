@@ -1,4 +1,4 @@
-<?php
+<php
 
 require_once('database.php');
 require_once('redis-test.php');
@@ -10,13 +10,9 @@ $iid = $_REQUEST["iid"];
 
 $itemData = [];
 
-//---------------------------------------------------------------------------------------
-//		Get Collection items for item id
-//---------------------------------------------------------------------------------------
-// This is retrieving the graphics, costs for an iid. It is a cacheable item. 
-// First we check if it has been cached, if not, we retrieve it, update itemData, 
-// then update the cache. 
-
+//--------------------------------------------------------
+//		Get Collection items
+//--------------------------------------------------------
 
 $key = "collection.items.$iid";
 if ($redis->exists($key)) {
@@ -52,25 +48,13 @@ else {
 //----------------------------------------------------------------------------------------------
 //              Get User Collection items for user id
 //----------------------------------------------------------------------------------------------
-// We are looking for the number of times a user has purchased this iid before. 
-// There are three conditions to detect: No purchases ever made, Purchases made but not of this iid,
-// and purchases made including this iid.
-// After determing the number of purchases, the DB is updated. 
-
-
-
-// The assoc array that will hold iid and count for update in db.
-// We initialize it to the first-time purchase settings
-// It is used for First-time purchases
 $purchaseData = ["item_id"=>$iid, "count"=>1];
 
 $purchaseDataHistory = [];
 		
-// We will use these booleans to control the purchase data update		
 $firstPurchase = true;
 $itemPurchased = false;
 
-// ----DB READ--------
 $sql = "SELECT * FROM user_collection_items_denorm where user_id = $id";
 $retval = $conn->query($sql);
 if(! $retval ) {	
@@ -78,7 +62,6 @@ if(! $retval ) {
         error_log($m);
 	die('{"status":"error", "message":"' . $m . '"}');
 }
-//------------------------
 
 if ($retval->field_count > 0) 
 {	
@@ -105,13 +88,10 @@ if ($retval->field_count > 0)
 	}
 }
 
-// Proceed with DB update, first encoding the correct data
 $encodePurchaseData = ($firstPurchase) ?  json_encode($purchaseData) : json_encode($purchaseDataHistory) ;
 
-// Determine which SQL string to run
 $sql = "INSERT INTO user_collection_items_denorm (user_id, data) VALUES ($id, '" . $encodePurchaseData . "') ON DUPLICATE KEY UPDATE data = '" .  $encodePurchaseData . "'";
 
-// Run the DB write
 $retval = $conn->query($sql);
 if (! $retval )
 {

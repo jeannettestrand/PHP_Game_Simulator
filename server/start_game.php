@@ -11,8 +11,6 @@ $gid = $_REQUEST["gid"];
 //	GAME_DATA 
 //----------------------------------
 //
-//DB CALL: retrieve all key and value pairs associated with $gid from game_data
-//
 $gameData = []; // CACHED GAME DATA, includes wp
 
 $key = "game.data.$gid";
@@ -37,7 +35,6 @@ else
 		$redis->set($key, $gameData);
 	}
 }
-//Remove WP from data returned to client.
 
 $returnGameData = []; //GAME DATA RETURNED TO PIGGIE, excludes wp
 
@@ -53,8 +50,6 @@ foreach ($gameData as $item)
 //	USER_GAME_DATA
 //-----------------------------------
 //
-//DB CALL: retrieve all user_game_data rows associated with a user_id and a game_id
-//
 $userGameData = [];
 $userGameData["sessions"]=0;
 
@@ -62,7 +57,6 @@ $key = "user.game.data.$id.$gid";
 if ($redis->exists($key))
 {
 	$userGameData = $redis->get($key);
-	//REDIS USER GAME DATA IS SET AT END OF FILE 
 }
 else
 {	
@@ -103,7 +97,6 @@ if (! $retval )
 
 $redis->set($key, $userGameData);
 
-// dbUpdate is already encoded, so we use that instead of encoding again.
 echo '{"game_data":' . json_encode($returnGameData) . ', "user_game_data":' . $encodeUserGameData . '}';
 
 $conn->close();

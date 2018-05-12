@@ -1,31 +1,33 @@
 // ---------------------------
 //
-//		 PIGGIE CLIENT
+//PIGGIE CLIENT
 //
 // Usage:
-//				nodejs piggie.js --user=<user_id> --gs=<game_server_url> --sn=<social_network_ip> --time=<time_in_seconds> [--verbose]
+//	nodejs piggie.js --user=<user_id> --gs=<game_server_url> --sn=<social_network_ip> --time=<time_in_seconds> [--verbose]
 //
-//	 --user: the player's user id in the game; an integer from 1 to 300,000
+//	--user: the player's user id in the game; an integer from 1 to 300,000
 //
-//	 --time: roughly the number of seconds the simulation should last (to represent the
+//	--time: roughly the number of seconds the simulation should last (to represent the
 //               length of time the user plays the game)
 //
-//	 --sn: the ip of the social network.  This will be used to get the list of the user's friends and their app friends.
+//	--sn: the ip of the social network.  This will be used to get the list of the user's friends and their app friends.
 //
-//	 --gs: the url of the game server (where /init.php, /start_game.php etc. are called).
+//	--gs: the url of the game server (where /init.php, /start_game.php etc. are called).
 //             For example, if you're running locally and you're implementing the starter, it would be:
 //		
-//				--gs=localhost/piggie_starter
+//	--gs=localhost/piggie_starter
 //
-//	 --verbose: if present, will output messages for all the game play.  Useful for debugging and tracking an entire 
+//	--verbose: if present, will output messages for all the game play.  Useful for debugging and tracking an entire 
 //                  play cycle.  If it is not present, the only output will be the JSON stats results, appropriate for
 //                  sim_worker instances (but also human-readable if launched standalone).
 //
 // ------------------------------
 
-// This line is needed to get a fake XMLHttpRequest object; this thing is
+// This line is needed to get a XMLHttpRequest object; this thing is
 // normally provided directly by the browser, so we need to get one here from
 // the nodejs library.
+
+
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var xmlhttp = new XMLHttpRequest();
 
@@ -53,9 +55,6 @@ var nonAppFriends;
 // Some global data that ends up being passed to the server.
 var game_id;
 
-//REMOVE WP FROM CLIENT CODE
-//var game_wp;
-	
 
 // The "piggie" object organizes the main functions a player needs to do: init
 // (login), startGame, play, purchase.	
@@ -108,7 +107,10 @@ piggie = {
 
 
 
-	// This is the first the then player does.
+	// The init callback calls the game server to reques login.
+	// Sends the user ID to the game server.
+	// Receives user info, user collection items, game configuration details.
+	// If all is successful, adds the next function call to the game data structure.
 	init: function() {
 		if (verbose) console.log("Starting init...");
 		var startTime = Date.now();
@@ -126,13 +128,8 @@ piggie = {
 					blockDone = true;
 				} else {
 					user = JSON.parse(JSON.stringify(resp.user));
-					//if (verbose) console.log(JSON.stringify(user));
 					collections = JSON.parse(JSON.stringify(resp.collections));
-					//if (verbose) console.log(collections);
 					config = JSON.parse(JSON.stringify(resp.config));
-					
-					// Record the elapsed time and allow the master loop to continue to
-					// start a new game.
 					times.init.push(Date.now() - startTime);
 					blocks.push("start_game");
 					if (verbose) console.log("Login complete");
@@ -158,9 +155,9 @@ piggie = {
 		}
 	},
 	
-	// This simulates a "session" with a single game within the piggie site. 
+	// This simulates a "session" consisting of a single game play 
 	// It takes as input the player's user id, and the id of the game the
-	// player "chose" to play.
+	// player selects.
 	//
 	// It simulates a play by first telling the server the game the player
 	// selected (/start_game.php), and then randomly does 1-100 "play" actions
@@ -179,10 +176,6 @@ piggie = {
 					blockDone = true;
 				} else {
 					times.startGame.push(Date.now() - startTime);
-					
-					// REMOVE WP MGMT in client-accessible code
-					// game_wp = ( resp.game_data.wp ) ? resp.game_data.wp : 0.9;
-					
 					var numPlays = Math.floor(Math.random() * 100) + 1;
 					if (verbose) console.log("Playing game " + game_id + " " + numPlays + " times ...");
 					for (var i = 0; i < numPlays; i++) blocks.push("play");
@@ -221,10 +214,6 @@ piggie = {
 					blocks.push("play");
 					blockDone = true;
 				} else {
-					// TODO: update the user object with results.
-			
-					// Record the results; note that if this was the *last* play action, we need
-					// to either start a new game or do a purchase.
 					times.play.push(Date.now() - startTime);
 					if (blocks.length == 0) {
 						if (Math.random() < 0.5) blocks.push("start_game");
@@ -272,9 +261,6 @@ piggie = {
 					blocks.push("purchase");
 					blockDone = true;
 				} else {
-					// TODO: update the user data according to response text.
-			
-					// Record the results.
 					times.purchase.push(Date.now() - startTime);
 					blocks.push("start_game");
 					blockDone = true;

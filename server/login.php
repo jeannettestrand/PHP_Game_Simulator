@@ -16,7 +16,7 @@ $appFriends = json_decode($_REQUEST["appFriends"]);
 //		SN DATA MGMT
 //------------------------------------------------
 //
-//Build id list for all users app friends
+// Build id list for all users app friends to return to client
 //
 //
 $id_in_clause = "(";
@@ -25,11 +25,8 @@ foreach ($appFriends as $friend_id)
 	$id_in_clause .= $friend_id . ",";
 }
 $id_in_clause .= $id . ")";
-//
-//
-// DB CALL: get basic user data from friends and player.
-//
-//
+
+
 $sql = 'SELECT * FROM users where id in ' . $id_in_clause;
 $retval = $conn->query( $sql );
 if(! $retval )
@@ -38,12 +35,6 @@ if(! $retval )
 	error_log($m);
 	die('{"status":"error", "message":"' . $m . '"}');
 }
-//
-//
-// iterate through the DB results; append all user data to $app_friends, except of course
-// for the player's data, which goes into $user_data.
-//
-//
 $app_friend_data = [];
 $user_data = []; //USED TO RETURN USER INFO TO PIGGIE.JS
 while ($row = $retval->fetch_assoc())
@@ -52,8 +43,6 @@ while ($row = $retval->fetch_assoc())
 	if ($uid == $id) {
 		$user_data = $row;
 
-		// We'll leave this as a placeholder for now; we'll fill this in
-		// later.
 		$user_data["collections"] = [];
 	} else {
 		$app_friend_data[$row["id"]] = $row;
@@ -64,7 +53,6 @@ while ($row = $retval->fetch_assoc())
 //----------------------
 // UPDATE USER
 //----------------------
-// DB CALL: update the last_login timestamp for this user.
 $sql = "UPDATE users SET last_login=now() WHERE id=$id";
 $retval = $conn->query( $sql );
 if(! $retval )
@@ -78,8 +66,6 @@ if(! $retval )
 // ---------------------------
 //    GLOBAL GAME CONFIG
 // ---------------------------
-// DB CALL: get all key/value pairs from global_config, save them as proper
-// associative array key/value pairs. 
 $key = "global_config";
 $config = [];
 if ($redis->exists($key)) {
@@ -105,7 +91,6 @@ if ($redis->exists($key)) {
 // ---------------------------
 //     COLLECTION_ITEMS
 // ---------------------------
-// DB CALL: get basic collection data.
 $collection_items = [];
 $key = "collection_items";
 if ($redis->exists($key)) 
@@ -129,9 +114,6 @@ if ($redis->exists($key))
 //---------------------------------
 //	USER_COLLECTION_ITEMS
 //---------------------------------
-//DB CALL: Get User Collection Items, it is not cached to redis, 
-//This appends the collection information to the user_data array initialized above
-
 $sql = "SELECT * FROM user_collection_items_denorm WHERE user_id = $id";
 $retval = $conn->query( $sql );
 if (! $retval ) {
@@ -139,11 +121,6 @@ if (! $retval ) {
 	error_log($m);
 	die('{"status":"error", "message":"' .$m . '"}');
 }
-//while ($row = $retval->fetch_assoc()) 
-//{ 
-//	$user_data['collections'][$row['item_id']] = array("count" => $row['count']);
-
-//Results only have one row, fetch it into the $results variable
 if ($results=$retval->fetch_assoc()) {
 	$data = json_decode($results['data'], true);
 
@@ -152,7 +129,6 @@ if ($results=$retval->fetch_assoc()) {
 	}
 
 }
-
 
 
 // ---------------------------
